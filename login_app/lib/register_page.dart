@@ -2,33 +2,61 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'validators.dart';
 import 'auth_errorrs.dart';
-import 'register_page.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
+
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
+  final _pwdCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
   bool _loading = false;
   String? _error;
-  Future<void> _signIn() async {
+  bool _obscure = true;
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _pwdCtrl.dispose();
+    _confirmCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
     setState(() {
       _loading = true;
       _error = null;
     });
+
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailCtrl.text.trim(),
-        password: _passwordCtrl.text,
+      final email = _emailCtrl.text.trim();
+      final password = _pwdCtrl.text;
+
+      // Crear usuario en Firebase Authentication
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
       );
-      // authStateChanges() del AuthGate redirige a Home automáticamente
+
+      //Enviar verificación de correo
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null && !user.emailVerified) {
+        await user.sendEmailVerification();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Se envió un correo de verificación.'),
+            ),
+          );
+        }
+      }
     } catch (e) {
       setState(() => _error = mapAuthErrorToMessage(e));
     } finally {
@@ -36,11 +64,11 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  @override
-  void dispose() {
-    _emailCtrl.dispose();
-    _passwordCtrl.dispose();
-    super.dispose();
+  String? _confirmValidator(String? v) {
+    final conf = v ?? '';
+    if (conf.isEmpty) return 'Confirma tu contraseña';
+    if (conf != _pwdCtrl.text) return 'Las contraseñas no coinciden';
+    return null;
   }
 
   @override
@@ -57,6 +85,24 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Botón de regreso
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.arrow_back_ios),
+                        style: IconButton.styleFrom(
+                          backgroundColor: const Color(0xFFF1F5F9),
+                          foregroundColor: const Color(0xFF64748B),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
                     // Logo o icono principal
                     Container(
                       width: 80,
@@ -67,7 +113,7 @@ class _LoginPageState extends State<LoginPage> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Icon(
-                        Icons.lock_outline,
+                        Icons.person_add_outlined,
                         size: 40,
                         color: Color(0xFF2563EB),
                       ),
@@ -75,7 +121,7 @@ class _LoginPageState extends State<LoginPage> {
 
                     // Título y subtítulo
                     const Text(
-                      'Bienvenido',
+                      'Crear cuenta',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
@@ -86,7 +132,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Inicia sesión en tu cuenta',
+                      'Únete a nuestra comunidad',
                       style: TextStyle(
                         fontSize: 16,
                         color: Color(0xFF64748B),
@@ -112,13 +158,32 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const SizedBox(height: 20),
                           TextFormField(
-                            controller: _passwordCtrl,
-                            decoration: const InputDecoration(
+                            controller: _pwdCtrl,
+                            decoration: InputDecoration(
                               labelText: 'Contraseña',
+                              prefixIcon: const Icon(Icons.lock_outline),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscure
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                ),
+                                onPressed: () =>
+                                    setState(() => _obscure = !_obscure),
+                              ),
+                            ),
+                            obscureText: _obscure,
+                            validator: Validators.password,
+                          ),
+                          const SizedBox(height: 20),
+                          TextFormField(
+                            controller: _confirmCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Confirmar contraseña',
                               prefixIcon: Icon(Icons.lock_outline),
                             ),
                             obscureText: true,
-                            validator: Validators.password,
+                            validator: _confirmValidator,
                           ),
                           const SizedBox(height: 24),
 
@@ -148,12 +213,12 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
 
-                          // Botón de iniciar sesión
+                          // Botón de crear cuenta
                           SizedBox(
                             width: double.infinity,
                             height: 52,
                             child: ElevatedButton(
-                              onPressed: _loading ? null : _signIn,
+                              onPressed: _loading ? null : _register,
                               child: _loading
                                   ? const SizedBox(
                                       height: 20,
@@ -166,31 +231,27 @@ class _LoginPageState extends State<LoginPage> {
                                             ),
                                       ),
                                     )
-                                  : const Text('Iniciar sesión'),
+                                  : const Text('Crear cuenta'),
                             ),
                           ),
 
                           const SizedBox(height: 16),
 
-                          // Enlace para crear cuenta
+                          // Enlace para volver al login
                           TextButton(
                             onPressed: _loading
                                 ? null
-                                : () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => const RegisterPage(),
-                                      ),
-                                    );
-                                  },
-                            child: const Text('¿No tienes cuenta? Regístrate'),
+                                : () => Navigator.of(context).pop(),
+                            child: const Text(
+                              '¿Ya tienes cuenta? Inicia sesión',
+                            ),
                           ),
                         ],
                       ),
                     ),
 
                     const SizedBox(height: 32),
-                    const _SmallPrint(),
+                    const _SecurityNotes(),
                   ],
                 ),
               ),
@@ -202,8 +263,9 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-class _SmallPrint extends StatelessWidget {
-  const _SmallPrint();
+class _SecurityNotes extends StatelessWidget {
+  const _SecurityNotes();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -213,8 +275,9 @@ class _SmallPrint extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Text(
-        'Nota: No mostramos si el usuario existe o no. '
-        'Siempre usamos mensajes genéricos para proteger la privacidad.',
+        'La cuenta se crea en Firebase Authentication.\n'
+        'Se envía verificación de correo automáticamente.\n'
+        'No se guardan contraseñas localmente.',
         style: TextStyle(
           fontSize: 12,
           color: Color(0xFF64748B),
