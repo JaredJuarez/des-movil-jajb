@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "611820996568",
+    "firebase_url": "https://fir-4c-21c06-default-rtdb.firebaseio.com",
+    "project_id": "fir-4c-21c06",
+    "storage_bucket": "fir-4c-21c06.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:611820996568:android:ea9c8149e5fcad2ff494ad",
+        "android_client_info": {
+          "package_name": "com.example.firebase4c"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQeUWbjdTzPQQN4J0oThgYJaXFL_dW8Hs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:611820996568:android:207fb96ce0f1023df494ad",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQeUWbjdTzPQQN4J0oThgYJaXFL_dW8Hs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
